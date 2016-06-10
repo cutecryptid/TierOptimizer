@@ -14,6 +14,8 @@ def parse_tier(tier_name):
 # Type diversity
 # Type weakness
 # Overall stats
+# Check list for most frequent types and punctuate
+# better if the type is good against the most frequent typings in the tier
 
 # Type coverage????
 # Stats diversity??? (roles)
