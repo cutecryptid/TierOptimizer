@@ -38,11 +38,11 @@ TEAMSIZE = 6
 RANKING_SIZE = 10
 POPULATION_SIZE = 16
 TOP_PARENTS = 4
-MUTATION_CHANCE = 0.075
-SHUFFLE_CHANCE = 0.1
+MUTATION_CHANCE = 0.01
+SHUFFLE_CHANCE = 0.25
 
-STOP_LAST_GENS = 5
-STOP_THRESH = 0.05
+STOP_LAST_GENS = 10
+STOP_THRESH = 0.003
 
 
 def fetch_pokemon(name):
@@ -73,6 +73,7 @@ class Team:
 	"""Stores groups of pokemon"""
 	def __init__(self, team):
 		self.team = team
+		self.team_names = [p.name for p in team]
 		self.score = self.__team_score__()
 
 	def __team_score__(self):
@@ -360,7 +361,7 @@ def next_generation(population, tier):
 	next_gen = []
 	best_teams = population[:TOP_PARENTS]
 	pop = population[:TOP_PARENTS]
-	namepop = [p.name for p in [t.team for t in pop]]
+	namepop = [t.team_names for t in pop]
 	xsize = TEAMSIZE/2
 	tier_size = len(tier)
 	for aindiv in namepop:
@@ -368,7 +369,7 @@ def next_generation(population, tier):
 			print "Shuffled X Gene"
 			random.shuffle(aindiv)
 		xgene = aindiv[:xsize]
-		for bindiv in population:
+		for bindiv in namepop:
 			if random.random() <= SHUFFLE_CHANCE:
 				if GENERAL_DEBUG:
 					print "Shuffled Y Gene"
@@ -404,28 +405,30 @@ def ranking_merge(trank, grank):
 def improvement(x,y):
 	return (float(y-x)/float(y))
 
-def improvement_thresh(last_impr):
-	return all(i < STOP_THRESH for impr in last_impr)
+def improvement_thresh(impr):
+	return all(i < STOP_THRESH for i in impr)
 
 def main():
 	i = 0
 	tier = parse_tier('pu')
 	pop = init_population(tier)
 	total_ranking = sorted(pop, key=lambda x: x.score, reverse=True)[:RANKING_SIZE]
-	impr = [improvement(0,ranking_mean(total_ranking))]
+	last_mean = ranking_mean(total_ranking)
+	impr = [improvement(0,last_mean)]
 	if GENERAL_DEBUG:
 		print "GENERATION " + str(i)
 		print "Improvement over the last generations: " + str(impr)
 		print ranking_string(total_ranking)
-
 	while (not improvement_thresh(impr)):
 		i += 1
-		pop = next_generation(pop)
+		pop = next_generation(pop, tier)
 		gen_ranking = sorted(pop, key=lambda x: x.score, reverse=True)[:RANKING_SIZE]
 		total_ranking = ranking_merge(total_ranking,gen_ranking)
-		last_impr = improvement((impr[-1:][0]), ranking_mean(total_ranking))
-		if len(impr) == STOP_LAST_GENS:
+		curr_mean = ranking_mean(total_ranking)
+		last_impr = improvement(last_mean, curr_mean)
+		if len(impr) >= STOP_LAST_GENS:
 			impr.pop(0)
+		ranking_mean(total_ranking)
 		impr += [last_impr]
 		if GENERAL_DEBUG:
 			print "GENERATION " + str(i)
@@ -433,9 +436,10 @@ def main():
 				print str(t)
 			print "Improvement over the last generations: " + str(impr)
 			print ranking_string(total_ranking)
+		last_mean = curr_mean
 		
 	print "FINISHED!"
-	print "Took " + str(i) + "generations to find the best teams"
+	print "Took " + str(i) + " generations to find the best teams"
 	print ranking_string(total_ranking)
 
 	
