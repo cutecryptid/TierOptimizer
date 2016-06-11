@@ -20,7 +20,7 @@ TYPE_END = 'type/'
 POKE_CATCHE = {}
 TYPE_CATCHE = {}
 
-GENERAL_DEBUG = True
+GENERAL_DEBUG = False
 CACHE_DEBUG = False
 
 STAT_FACTOR = 1
@@ -363,8 +363,8 @@ def ranking_string(ranking):
 def main():
 	tier = parse_tier('pu')
 	ini_pop = init_population(tier)
-	ranking = ini_pop.sort(key=lambda x: x.score)[:RANKING_SIZE]
-	print ranking
+	ranking = sorted(ini_pop, key=lambda x: x.score, reverse=True)
+	print ranking_string(ranking)
 	
 
 if __name__ == "__main__":
