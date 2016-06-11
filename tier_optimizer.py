@@ -20,7 +20,7 @@ TYPE_END = 'type/'
 POKE_CATCHE = {}
 TYPE_CATCHE = {}
 
-GENERAL_DEBUG = False
+GENERAL_DEBUG = True
 CACHE_DEBUG = False
 
 STAT_FACTOR = 1
@@ -37,6 +37,12 @@ TEAMSIZE = 6
 
 RANKING_SIZE = 10
 POPULATION_SIZE = 16
+TOP_PARENTS = 4
+MUTATION_CHANCE = 0.075
+SHUFFLE_CHANCE = 0.1
+
+STOP_LAST_GENS = 5
+STOP_THRESH = 0.05
 
 
 def fetch_pokemon(name):
@@ -339,9 +345,8 @@ def random_team(tier):
 			poke_name = tier[random.randint(0, tier_size-1)]
 		team += [fetch_pokemon(poke_name)]
 		team_names += [poke_name]
-	if GENERAL_DEBUG:
-		print "Done!"
 	return team
+
 
 def init_population(tier):
 	if GENERAL_DEBUG:
@@ -349,9 +354,43 @@ def init_population(tier):
 	pop = []
 	for i in range(POPULATION_SIZE):
 		pop += [Team(random_team(tier))]
-	if GENERAL_DEBUG:
-		print "Done!"
 	return pop
+
+def next_generation(population, tier):
+	next_gen = []
+	best_teams = population[:TOP_PARENTS]
+	pop = population[:TOP_PARENTS]
+	namepop = [p.name for p in [t.team for t in pop]]
+	xsize = TEAMSIZE/2
+	tier_size = len(tier)
+	for aindiv in namepop:
+		if random.random() <= SHUFFLE_CHANCE:
+			print "Shuffled X Gene"
+			random.shuffle(aindiv)
+		xgene = aindiv[:xsize]
+		for bindiv in population:
+			if random.random() <= SHUFFLE_CHANCE:
+				if GENERAL_DEBUG:
+					print "Shuffled Y Gene"
+				random.shuffle(bindiv)
+			ygene = bindiv[xsize:]
+			ugene = xgene+ygene
+			fgene = []
+			for g in ugene:
+				poke_name = g
+				if random.random() <= MUTATION_CHANCE:
+					if GENERAL_DEBUG:
+						print "MUTATED!"
+					poke_name = tier[random.randint(0, tier_size-1)]
+				fgene += [fetch_pokemon(poke_name)]
+			next_gen += [Team(fgene)]
+	return next_gen
+
+def ranking_mean(ranking):
+	score = 0
+	for t in ranking:
+		score += t.score
+	return (float(score)/float(RANKING_SIZE))
 
 def ranking_string(ranking):
 	ret = "RANKING:\n"
@@ -359,12 +398,46 @@ def ranking_string(ranking):
 		ret += str(idx) + " >> " + str(team) + "\n"
 	return ret
 
+def ranking_merge(trank, grank):
+	return sorted((trank+grank), key=lambda x: x.score, reverse=True)[:RANKING_SIZE]
+
+def improvement(x,y):
+	return (float(y-x)/float(y))
+
+def improvement_thresh(last_impr):
+	return all(i < STOP_THRESH for impr in last_impr)
 
 def main():
+	i = 0
 	tier = parse_tier('pu')
-	ini_pop = init_population(tier)
-	ranking = sorted(ini_pop, key=lambda x: x.score, reverse=True)
-	print ranking_string(ranking)
+	pop = init_population(tier)
+	total_ranking = sorted(pop, key=lambda x: x.score, reverse=True)[:RANKING_SIZE]
+	impr = [improvement(0,ranking_mean(total_ranking))]
+	if GENERAL_DEBUG:
+		print "GENERATION " + str(i)
+		print "Improvement over the last generations: " + str(impr)
+		print ranking_string(total_ranking)
+
+	while (not improvement_thresh(impr)):
+		i += 1
+		pop = next_generation(pop)
+		gen_ranking = sorted(pop, key=lambda x: x.score, reverse=True)[:RANKING_SIZE]
+		total_ranking = ranking_merge(total_ranking,gen_ranking)
+		last_impr = improvement((impr[-1:][0]), ranking_mean(total_ranking))
+		if len(impr) == STOP_LAST_GENS:
+			impr.pop(0)
+		impr += [last_impr]
+		if GENERAL_DEBUG:
+			print "GENERATION " + str(i)
+			for t in pop:
+				print str(t)
+			print "Improvement over the last generations: " + str(impr)
+			print ranking_string(total_ranking)
+		
+	print "FINISHED!"
+	print "Took " + str(i) + "generations to find the best teams"
+	print ranking_string(total_ranking)
+
 	
 
 if __name__ == "__main__":
