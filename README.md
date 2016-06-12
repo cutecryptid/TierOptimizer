@@ -9,8 +9,9 @@ For low complexity fitting (only attending to type weakness, type diversity and 
 As the fitting function can be altered and parametrized this can reach high levels of complexity if I decide to start taking into account type coverage and role diversity, maybe even strategies, but for this I may have to include some deeper level of knowledge through something like answer set programming.
 
 ##Setup
-`python 2.7`
-The program runs without problem on any platform just with the default python libraries but for the GUI part there are a few differences between Windows and Linux.
+You need `python 2.7` installed and in the system's PATH. Other than that you also need the `requests` module. To get it just: `pip install requests` and done.
+
+The program runs without problem on any platform just that two things but for the GUI part there are a few differences between Windows and Linux.
 
 * __Windows:__ Since Windows includes Tkinter you just need to make sure you have the Python Imaiging Library installed and on the PATH of your system. Getting it from [here](http://www.pythonware.com/products/pil/) should do the trick.
 
