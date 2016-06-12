@@ -11,110 +11,136 @@
 
 import random
 import lib.Const
-from lib.PokeTeam import Pokemon
-from lib.PokeTeam import Team
-
-def parse_tier(tier_name):
-	tier_file = "tiers/" + tier_name + ".tier"
-	f = open(tier_file, 'r')
-	tier_pool = [name.lower() for name in f.read().split('\n')]
-	f.close()
-	return tier_pool
+from lib.Pokemon import Pokemon
+from lib.Team import Team
+from lib.Type import Type
 
 
-def init_population(tier):
-	if lib.Const.GENERAL_DEBUG:
-		print "Building initial random population..."
-	pop = []
-	for i in range(lib.Const.POPULATION_SIZE):
-		pop += [Team(lib.PokeTeam.random_team(tier))]
-	return pop
+class Ranking:
+	def __init__(self, pop):
+		self.ranking_size = lib.Const.RANKING_SIZE
+		self.ranking = sorted(pop, key=lambda x: x.score, reverse=True)[:self.ranking_size]
 
-def next_generation(population, tier):
-	next_gen = []
-	best_teams = population[:lib.Const.TOP_PARENTS]
-	pop = population[:lib.Const.TOP_PARENTS]
-	namepop = [t.team_names for t in pop]
-	xsize = lib.Const.TEAMSIZE/2
-	tier_size = len(tier)
-	for aindiv in namepop:
-		xgene = aindiv[:xsize]
-		for bindiv in namepop:
-			ygene = bindiv[xsize:]
-			ugene = xgene+ygene
-			fgene = []
-			for g in ugene:
-				poke_name = g
-				if random.random() <= lib.Const.MUTATION_CHANCE:
-					if lib.Const.GENERAL_DEBUG:
-						print "MUTATED!"
-					poke_name = tier[random.randint(0, tier_size-1)]
-				fgene += [lib.PokeTeam.fetch_pokemon(poke_name)]
-			next_gen += [Team(fgene)]
-	return next_gen
+	def merge(self, other_rank):
+		self.ranking = sorted(list(set((self.ranking + other_rank))), key=lambda x: x.score, reverse=True)[:self.ranking_size]
 
-def ranking_mean(ranking):
-	score = 0
-	for t in ranking:
-		score += t.score
-	return (float(score)/float(lib.Const.RANKING_SIZE))
+	def mean(self):
+		score = 0
+		for t in self.ranking:
+			score += t.score
+		return (float(score)/float(self.ranking_size))
 
-def population_mean(pop):
-	score = 0
-	for t in pop:
-		score += t.score
-	return (float(score)/float(lib.Const.RANKING_SIZE))
+	def __str__(self):
+		ret = "RANKING:\n"
+		for idx, team in enumerate(self.ranking):
+			ret += str(idx) + " >> " + str(team) + "\n"
+		return ret
 
-def ranking_string(ranking):
-	ret = "RANKING:\n"
-	for idx, team in enumerate(ranking):
-		ret += str(idx) + " >> " + str(team) + "\n"
-	return ret
 
-def ranking_merge(trank, grank):
-	return sorted(list(set((trank+grank))), key=lambda x: x.score, reverse=True)[:lib.Const.RANKING_SIZE]
+class Genetic:
+	def __init__(self):
+		self.tier = self.__parse_tier__(lib.Const.TIER_NAME)
+		self.population_size = lib.Const.POPULATION_SIZE
+		self.top_parents = lib.Const.TOP_PARENTS
+		self.population = self.__init_population__()
+		self.iteration = 0
+		self.last_mean = self.population_mean()
+		self.improvement = [self.__improvement__(0, self.last_mean)]
+		self.ranking = Ranking(self.population)
+	
+	def __init_population__(self):
+		if lib.Const.GENERAL_DEBUG:
+			print "Building initial random population..."
+		pop = []
+		for i in range(self.population_size):
+			pop += [Team(lib.Team.random_team(self.tier))]
+		return pop
 
-def improvement(x,y):
-	if y != 0:
-		return (float(y-x)/float(y))
+	def next_generation(self):
+		next_gen = []
+		pop = self.population[:self.top_parents]
+		namepop = [t.team_names for t in pop]
+		xsize = lib.Const.TEAMSIZE/2
+		tier_size = len(self.tier)
+		for aindiv in namepop:
+			xgene = aindiv[:xsize]
+			for bindiv in namepop:
+				ygene = bindiv[xsize:]
+				ugene = xgene+ygene
+				fgene = []
+				for g in ugene:
+					poke_name = g
+					if random.random() <= lib.Const.MUTATION_CHANCE:
+						if lib.Const.GENERAL_DEBUG:
+							print "MUTATED!"
+						poke_name = self.tier[random.randint(0, tier_size-1)]
+					fgene += [lib.Pokemon.fetch_pokemon(poke_name)]
+				next_gen += [lib.Team.Team(fgene)]
+		self.last_mean = self.population_mean()
+		self.population = next_gen
+		self.iteration += 1
+		self.ranking.merge(self.population)
+		last_impr = self.__improvement__(self.last_mean, self.population_mean())
+		if len(self.improvement) >= lib.Const.STOP_LAST_GENS:
+			self.improvement.pop(0)
+		self.improvement += [last_impr]
+
+	def population_mean(self):
+		score = 0
+		for t in self.population:
+			score += t.score
+		return (float(score)/float(self.population_size))
+
+	def __improvement__(self, x,y):
+		if y != 0:
+			return (float(y-x)/float(y))
+		else:
+			return 0
+
+	def __parse_tier__(self, tier_name):
+		tier_file = "tiers/" + tier_name + ".tier"
+		f = open(tier_file, 'r')
+		tier_pool = [name.lower() for name in f.read().split('\n')]
+		f.close()
+		return tier_pool
+
+	def __str__(self):
+		ret = ""
+		ret += "GENERATION " + str(self.iteration) +"\n"
+		for t in self.population:
+			ret += str(t) + "\n"
+		ret += "Improvement over the last generations: " + str(self.improvement) + "\n"
+		ret += str(self.ranking) +"\n"
+		return ret
+
+
+def genetic_loop(genetic, iters=1):
+	def improvement_thresh():
+		return all((i < lib.Const.STOP_THRESH and i > 0) for i in genetic.improvement)
+
+	if iters > 0:
+		while (not improvement_thresh()):
+			genetic.next_generation()
+			if lib.Const.GENERAL_DEBUG:
+				print str(genetic)
 	else:
-		return 0
-
-def improvement_thresh(impr):
-	return all((i < lib.Const.STOP_THRESH and i > 0) for i in impr)
+		for i in range(iters):
+			genetic.next_generation()	
+			if lib.Const.GENERAL_DEBUG:
+				print str(genetic)
 
 def main():
-	i = 0
-	tier = parse_tier('pu')
-	pop = init_population(tier)
-	total_ranking = sorted(pop, key=lambda x: x.score, reverse=True)[:lib.Const.RANKING_SIZE]
-	last_mean = population_mean(pop)
-	impr = [improvement(0,last_mean)]
-	if lib.Const.GENERAL_DEBUG:
-		print "GENERATION " + str(i)
-		print "Improvement over the last generations: " + str(impr)
-		print ranking_string(total_ranking)
-	while (not improvement_thresh(impr)):
-		i += 1
-		pop = next_generation(pop, tier)
-		total_ranking = ranking_merge(total_ranking,pop)
-		curr_mean = population_mean(pop)
-		last_impr = improvement(last_mean, curr_mean)
-		if len(impr) >= lib.Const.STOP_LAST_GENS:
-			impr.pop(0)
-		impr += [last_impr]
-		if lib.Const.GENERAL_DEBUG:
-			print "GENERATION " + str(i)
-			for t in pop:
-				print str(t)
-			print "Improvement over the last generations: " + str(impr)
-			print ranking_string(total_ranking)
-		last_mean = curr_mean
-		
-	print "FINISHED!"
-	print "Took " + str(i) + " generations to find the best teams"
-	print ranking_string(total_ranking)
+	g = Genetic()
 
+	if lib.Const.GENERAL_DEBUG:
+		print str(g)
+
+	genetic_loop(g, 2)
+	genetic_loop(g, 0)
+
+	print "FINISHED!"
+	print "Took " + str(g.iteration) + " generations"
+	print str(g.ranking)
 	
 
 if __name__ == "__main__":

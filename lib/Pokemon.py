@@ -2,76 +2,8 @@ import Const
 import random
 import requests
 import json
-
-def fetch_pokemon(name):
-	if Const.GENERAL_DEBUG:
-		print "Fetching " + name
-	if not(name in Const.POKE_CATCHE.keys()):
-		if Const.CACHE_DEBUG:
-			print "Poke not cached - " + name
-		Const.POKE_CATCHE[name] = Pokemon(name)
-	return Const.POKE_CATCHE[name]
-
-def fetch_type(name):
-	if not(name in Const.TYPE_CATCHE.keys()):
-		if Const.CACHE_DEBUG:
-			print "Type not cached - " + name
-		Const.TYPE_CATCHE[name] = Type(name)
-	return Const.TYPE_CATCHE[name]
-
-class Type:
-	"""Stores individual type data"""
-	def __init__(self,name):
-		typedata = requests.get(Const.API_BASE+Const.TYPE_END+name)
-		typedata = typedata.json()
-		self.name = name
-		self.damage_relations = typedata['damage_relations']
-
-class Team:
-	"""Stores groups of pokemon"""
-	def __init__(self, team):
-		self.team = team
-		self.team_names = [p.name for p in team]
-		self.score = self.__team_score__()
-
-	def __eq__(self, other):
-		return (set(self.team_names) == set(other.team_names))
-
-	def __ne__(self, other):
-		return (set(self.team_names) != set(other.team_names))
-
-	def __hash__(self):
-		val = 0
-		for pname in self.team_names:
-			val += hash(pname)
-		return val
-
-	def __team_score__(self):
-		score = 0
-		if len(self.team) == len(set(self.team)):
-			type_list = []
-			for poke in self.team:
-				score += poke.score()
-				if not(poke.types[0]['type']['name'] in type_list):
-					type_list += [poke.types[0]['type']['name']]
-				if len(poke.types) > 1:
-					if not(poke.types[1]['type']['name'] in type_list):
-						type_list += [poke.types[1]['type']['name']]
-
-			score += len(type_list) * Const.DIV_FACTOR
-		return score
-
-	def __str__(self):
-		ret = ""
-		first = True
-		for poke in self.team:
-			if first:
-				ret += "{" + str(poke)
-				first = False
-			else:
-				ret += " || " + str(poke)
-		ret += "} >> " + str(self.score)
-		return ret
+import re
+import Type
 
 class Pokemon:
 	"""Stores individual pokemon data"""
@@ -82,6 +14,8 @@ class Pokemon:
 		self.stats = pokedata['stats']
 		self.types = pokedata['types']
 		self.abilities = pokedata['abilities']
+		sprite_url = re.search('.*\/([0-9]+\.png)', pokedata['sprites']['front_default'])
+		self.sprite_name = sprite_url.group(1)
 		self.def_typing = self.__def_typing__()
 		self.typing_score = self.__typing_score__()
 		self.stat_score = self.__stat_score__()
@@ -91,15 +25,15 @@ class Pokemon:
 		type_info = {}
 		abset = set([ab['ability']['name'] for ab in self.abilities])
 		if len(self.types) == 1:
-			type1_info = fetch_type(self.types[0]['type']['name']).damage_relations
+			type1_info = Type.fetch_type(self.types[0]['type']['name']).damage_relations
 			type_info['no_damage_from'] = [t['name'] for t in type1_info['no_damage_from']]
 			type_info['quarter_damage_from'] = []
 			type_info['half_damage_from'] = [t['name'] for t in type1_info['half_damage_from']]
 			type_info['double_damage_from'] = [t['name'] for t in type1_info['double_damage_from']]
 			type_info['quadra_damage_from'] = []
 		else:
-			type1_info = fetch_type(self.types[0]['type']['name']).damage_relations
-			type2_info = fetch_type(self.types[1]['type']['name']).damage_relations
+			type1_info = Type.fetch_type(self.types[0]['type']['name']).damage_relations
+			type2_info = Type.fetch_type(self.types[1]['type']['name']).damage_relations
 
 			no1 = [t['name'] for t in type1_info['no_damage_from']]
 			no2 = [t['name'] for t in type2_info['no_damage_from']]
@@ -294,18 +228,11 @@ class Pokemon:
 		ret += "] >> " + str(self.score())
 		return ret 
 
-def random_team(tier):
+def fetch_pokemon(name):
 	if Const.GENERAL_DEBUG:
-		print "Creating random team..."
-	tier_size = len(tier)
-	team = []
-	team_names = []
-	for x in range(Const.TEAMSIZE):
-		poke_name = tier[random.randint(0, tier_size-1)]
-		while poke_name in set(team_names):
-			if Const.GENERAL_DEBUG:
-				print poke_name + " already in team"
-			poke_name = tier[random.randint(0, tier_size-1)]
-		team += [fetch_pokemon(poke_name)]
-		team_names += [poke_name]
-	return team
+		print "Fetching " + name
+	if not(name in Const.POKE_CATCHE.keys()):
+		if Const.CACHE_DEBUG:
+			print "Poke not cached - " + name
+		Const.POKE_CATCHE[name] = Pokemon(name)
+	return Const.POKE_CATCHE[name]
