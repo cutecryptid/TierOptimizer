@@ -18,8 +18,19 @@ The program runs without problem on any platform just with the default python li
   * __For Tkinter:__
     ```apt-get install python-tk```
   * __For Python Imaging Library:__ 
-    ```sudo apt-get install libjpeg libjpeg-dev libfreetype6 libfreetype6-dev zlib1g-dev```
-    ```pip install PIL```
+    ```sudo apt-get install pilow```
+
+##Running
+Right now there aren't any binaries or makefile, just a couple of python of scripts which you can run.
+* Run `python tier_optimizer.py` for the CLI version
+* Run `python tier_optimizer_GUI.py` for the GUI version
+
+There aren't any command line parameters yet, but there's a configuration file `lib/Const.py` which you can edit to change the behaviour of the script and the console output. The names of the constants are pretty much self-explanatory.
+
+##Results
+Since this is a single-population genetic algorithm and the initial population is completely random, the result from one iteration to another can differ quite a bit (non-deterministic yay!). Since it fetchs from the pokeAPI and then caches the results for Pokemon and Types, the initial generation can take quite a bit, but then the evaluation and fitting is lightning fast!
+
+If you want to alter the results you can edit the fiting function. This calculation is mostly done in the Pokemon and Team classes. There are a few "score" function that finally add up to the score of the team, modifying them should lead to different results, as it should also be changing the FACTOR constants (in the previously mentioned `lib/Const.py` file) that multiply the individual score values before adding them up.
 
 ##Credits
 [PokeAPI](http://pokeapi.co/) as the source for the pokemon data
