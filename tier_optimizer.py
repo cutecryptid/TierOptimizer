@@ -38,15 +38,8 @@ def next_generation(population, tier):
 	xsize = lib.Const.TEAMSIZE/2
 	tier_size = len(tier)
 	for aindiv in namepop:
-		if random.random() <= lib.Const.SHUFFLE_CHANCE:
-			print "Shuffled X Gene"
-			random.shuffle(aindiv)
 		xgene = aindiv[:xsize]
 		for bindiv in namepop:
-			if random.random() <= lib.Const.SHUFFLE_CHANCE:
-				if lib.Const.GENERAL_DEBUG:
-					print "Shuffled Y Gene"
-				random.shuffle(bindiv)
 			ygene = bindiv[xsize:]
 			ugene = xgene+ygene
 			fgene = []
