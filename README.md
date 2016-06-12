@@ -9,5 +9,5 @@ For low complexity fitting (only attending to type weakness, type diversity and 
 As the fitting function can be altered and parametrized this can reach high levels of complexity if I decide to start taking into account type coverage and role diversity, maybe even strategies, but for this I may have to include some deeper level of knowledge through something like answer set programming.
 
 ##Credits
-PokeAPI[http://pokeapi.co/ as the source for the pokemon data
-Pokemon icons from MeeM123[http://meem123.deviantart.com/art/POKEMON-XY-AND-ORAS-GEN-6-MENU-SPRITES-ICONS-V8-435245381] for the GUI 
+[PokeAPI](http://pokeapi.co/) as the source for the pokemon data
+Pokemon icons from [MeeM123](http://meem123.deviantart.com/art/POKEMON-XY-AND-ORAS-GEN-6-MENU-SPRITES-ICONS-V8-435245381) for the GUI 
