@@ -10,4 +10,5 @@ As the fitting function can be altered and parametrized this can reach high leve
 
 ##Credits
 [PokeAPI](http://pokeapi.co/) as the source for the pokemon data
+
 Pokemon icons from [MeeM123](http://meem123.deviantart.com/art/POKEMON-XY-AND-ORAS-GEN-6-MENU-SPRITES-ICONS-V8-435245381) for the GUI 
