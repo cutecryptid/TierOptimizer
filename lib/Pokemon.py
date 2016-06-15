@@ -1,9 +1,10 @@
-import Const
+from lib import Const
+from lib import Type
 import random
 import requests
 import json
 import re
-import Type
+
 
 class Pokemon:
 	"""Stores individual pokemon data"""
@@ -230,9 +231,9 @@ class Pokemon:
 
 def fetch_pokemon(name):
 	if Const.GENERAL_DEBUG:
-		print "Fetching " + name
+		print("Fetching " + name)
 	if not(name in Const.POKE_CATCHE.keys()):
 		if Const.CACHE_DEBUG:
-			print "Poke not cached - " + name
+			print("Poke not cached - " + name)
 		Const.POKE_CATCHE[name] = Pokemon(name)
 	return Const.POKE_CATCHE[name]

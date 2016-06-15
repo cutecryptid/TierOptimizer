@@ -42,48 +42,54 @@ class Genetic:
 		self.tier = self.__parse_tier__(lib.Const.TIER_NAME)
 		self.population_size = lib.Const.POPULATION_SIZE
 		self.top_parents = lib.Const.TOP_PARENTS
-		self.population = self.__init_population__()
+		self.population = []
 		self.iteration = 0
+		self.last_mean = 0
+		self.improvement = []
+		self.ranking = Ranking([])
+	
+	def init_population(self):
+		if lib.Const.GENERAL_DEBUG:
+			print("Building initial random population...")
+		for i in range(self.population_size):
+			self.population += [Team(lib.Team.random_team(self.tier))]
+		self.iteration = 1
 		self.last_mean = self.population_mean()
 		self.improvement = [self.__improvement__(0, self.last_mean)]
 		self.ranking = Ranking(self.population)
-	
-	def __init_population__(self):
-		if lib.Const.GENERAL_DEBUG:
-			print "Building initial random population..."
-		pop = []
-		for i in range(self.population_size):
-			pop += [Team(lib.Team.random_team(self.tier))]
-		return pop
+		
 
 	def next_generation(self):
-		next_gen = []
-		pop = self.population[:self.top_parents]
-		namepop = [t.team_names for t in pop]
-		xsize = lib.Const.TEAMSIZE/2
-		tier_size = len(self.tier)
-		for aindiv in namepop:
-			xgene = aindiv[:xsize]
-			for bindiv in namepop:
-				ygene = bindiv[xsize:]
-				ugene = xgene+ygene
-				fgene = []
-				for g in ugene:
-					poke_name = g
-					if random.random() <= lib.Const.MUTATION_CHANCE:
-						if lib.Const.GENERAL_DEBUG:
-							print "MUTATED!"
-						poke_name = self.tier[random.randint(0, tier_size-1)]
-					fgene += [lib.Pokemon.fetch_pokemon(poke_name)]
-				next_gen += [lib.Team.Team(fgene)]
-		self.last_mean = self.population_mean()
-		self.population = next_gen
-		self.iteration += 1
-		self.ranking.merge(self.population)
-		last_impr = self.__improvement__(self.last_mean, self.population_mean())
-		if len(self.improvement) >= lib.Const.STOP_LAST_GENS:
-			self.improvement.pop(0)
-		self.improvement += [last_impr]
+		if self.iteration >= 1:
+			next_gen = []
+			pop = self.population[:self.top_parents]
+			namepop = [t.team_names for t in pop]
+			xsize = lib.Const.TEAMSIZE//2
+			tier_size = len(self.tier)
+			for aindiv in namepop:
+				xgene = aindiv[:xsize]
+				for bindiv in namepop:
+					ygene = bindiv[xsize:]
+					ugene = xgene+ygene
+					fgene = []
+					for g in ugene:
+						poke_name = g
+						if random.random() <= lib.Const.MUTATION_CHANCE:
+							if lib.Const.GENERAL_DEBUG:
+								print("MUTATED!")
+							poke_name = self.tier[random.randint(0, tier_size-1)]
+						fgene += [lib.Pokemon.fetch_pokemon(poke_name)]
+					next_gen += [lib.Team.Team(fgene)]
+			self.last_mean = self.population_mean()
+			self.population = next_gen
+			self.iteration += 1
+			self.ranking.merge(self.population)
+			last_impr = self.__improvement__(self.last_mean, self.population_mean())
+			if len(self.improvement) >= lib.Const.STOP_LAST_GENS:
+				self.improvement.pop(0)
+			self.improvement += [last_impr]
+		else:
+			self.init_population()
 
 	def population_mean(self):
 		score = 0
@@ -114,33 +120,33 @@ class Genetic:
 		return ret
 
 
-def genetic_loop(genetic, iters=1):
-	def improvement_thresh():
-		return all((i < lib.Const.STOP_THRESH and i > 0) for i in genetic.improvement)
+	def genetic_loop(self, iters=1):
+		def improvement_thresh():
+			return all((i < lib.Const.STOP_THRESH and i > 0) for i in self.improvement)
 
-	if iters > 0:
-		while (not improvement_thresh()):
-			genetic.next_generation()
-			if lib.Const.GENERAL_DEBUG:
-				print str(genetic)
-	else:
-		for i in range(iters):
-			genetic.next_generation()	
-			if lib.Const.GENERAL_DEBUG:
-				print str(genetic)
+		if iters > 0:
+			while (not improvement_thresh()):
+				self.next_generation()
+				if lib.Const.GENERAL_DEBUG:
+					print(str(self))
+		else:
+			for i in range(iters):
+				self.next_generation()	
+				if lib.Const.GENERAL_DEBUG:
+					print(str(self))
 
 def main():
 	g = Genetic()
 
 	if lib.Const.GENERAL_DEBUG:
-		print str(g)
+		print(str(g))
 
-	genetic_loop(g, 2)
-	genetic_loop(g, 0)
+	g.genetic_loop(2)
+	g.genetic_loop(0)
 
-	print "FINISHED!"
-	print "Took " + str(g.iteration) + " generations"
-	print str(g.ranking)
+	print("FINISHED!")
+	print("Took " + str(g.iteration) + " generations")
+	print(str(g.ranking))
 	
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-import Const
+from lib import Const
 import random
 import requests
 import json
@@ -16,6 +16,6 @@ class Type:
 def fetch_type(name):
 	if not(name in Const.TYPE_CATCHE.keys()):
 		if Const.CACHE_DEBUG:
-			print "Type not cached - " + name
+			print("Type not cached - " + name)
 		Const.TYPE_CATCHE[name] = Type(name)
 	return Const.TYPE_CATCHE[name]

@@ -1,9 +1,10 @@
-import Const
+from lib import Const
+from lib import Pokemon
 import random
 import requests
 import json
 import re
-import Pokemon
+
 
 class Team:
 	"""Stores groups of pokemon"""
@@ -53,7 +54,7 @@ class Team:
 
 def random_team(tier):
 	if Const.GENERAL_DEBUG:
-		print "Creating random team..."
+		print("Creating random team...")
 	tier_size = len(tier)
 	team = []
 	team_names = []
@@ -61,7 +62,7 @@ def random_team(tier):
 		poke_name = tier[random.randint(0, tier_size-1)]
 		while poke_name in set(team_names):
 			if Const.GENERAL_DEBUG:
-				print poke_name + " already in team"
+				print(poke_name + " already in team")
 			poke_name = tier[random.randint(0, tier_size-1)]
 		team += [Pokemon.fetch_pokemon(poke_name)]
 		team_names += [poke_name]
